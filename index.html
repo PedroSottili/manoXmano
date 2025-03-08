@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formação de Time</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .column {
+            width: 200px;
+            min-height: 500px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .blue { background-color: #007bff; }
+        .red { background-color: #dc3545; }
+        .green { background-color: #28a745; }
+        .player {
+            background-color: white;
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: grab;
+            text-align: center;
+        }
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="scoreboard">
+        <div>Grêmio: <span id="scoreGremio">0</span></div>
+        <div>Inter: <span id="scoreInter">0</span></div>
+    </div>
+    <div class="container">
+        <div class="column blue" id="gremio">
+            <h3>Grêmio</h3>
+            <div class="player" draggable="true">Volpi</div>
+            <div class="player" draggable="true">João Pedro</div>
+            <div class="player" draggable="true">G. Martins</div>
+            <div class="player" draggable="true">W. Leonardo</div>
+            <div class="player" draggable="true">L. Esteves</div>
+            <div class="player" draggable="true">Villasanti</div>
+            <div class="player" draggable="true">Camilo</div>
+            <div class="player" draggable="true">C. Oliveira</div>
+            <div class="player" draggable="true">Monsalve</div>
+            <div class="player" draggable="true">Amuzu/Pavón</div>
+            <div class="player" draggable="true">Braithwaite</div>
+            <div class="player" draggable="true">TEC - G. Quinteros</div>
+        </div>
+        <div class="column red" id="inter">
+            <h3>Inter</h3>
+            <div class="player" draggable="true">Anthoni</div>
+            <div class="player" draggable="true">Aguirre</div>
+            <div class="player" draggable="true">Vitão</div>
+            <div class="player" draggable="true">V. Gabriel</div>
+            <div class="player" draggable="true">Bernabei</div>
+            <div class="player" draggable="true">B. Henrique</div>
+            <div class="player" draggable="true">Fernando</div>
+            <div class="player" draggable="true">Vitinho</div>
+            <div class="player" draggable="true">Alan Patrick</div>
+            <div class="player" draggable="true">Carbonero</div>
+            <div class="player" draggable="true">Valencia</div>
+            <div class="player" draggable="true">TEC - Roger</div>
+        </div>
+        <div class="column green" id="timeFinal">
+            <h3>Time Final</h3>
+        </div>
+    </div>
+    <script>
+        const players = document.querySelectorAll('.player');
+        const gremioColumn = document.getElementById('gremio');
+        const interColumn = document.getElementById('inter');
+        const timeFinal = document.getElementById('timeFinal');
+        const scoreGremio = document.getElementById('scoreGremio');
+        const scoreInter = document.getElementById('scoreInter');
+
+        let gremioCount = 0;
+        let interCount = 0;
+
+        players.forEach(player => {
+            player.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text', player.innerText);
+                e.dataTransfer.setData('parentId', player.parentElement.id);
+            });
+        });
+
+        document.querySelectorAll('.column').forEach(column => {
+            column.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+            
+            column.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const playerName = e.dataTransfer.getData('text');
+                const parentId = e.dataTransfer.getData('parentId');
+                
+                if (column.id === 'timeFinal' || 
+                    (parentId === 'timeFinal' && ((column.id === 'gremio' && isGremio(playerName)) || (column.id === 'inter' && isInter(playerName))))) {
+                    
+                    const existingPlayer = Array.from(column.children).find(child => child.innerText === playerName);
+                    if (!existingPlayer) {
+                        const newPlayer = document.createElement('div');
+                        newPlayer.classList.add('player');
+                        newPlayer.innerText = playerName;
+                        newPlayer.setAttribute('draggable', 'true');
+                        
+                        newPlayer.addEventListener('dragstart', (e) => {
+                            e.dataTransfer.setData('text', newPlayer.innerText);
+                            e.dataTransfer.setData('parentId', newPlayer.parentElement.id);
+                        });
+                        
+                        column.appendChild(newPlayer);
+                    }
+                    
+                    if (parentId === 'gremio' && column.id === 'timeFinal') {
+                        gremioCount++;
+                        scoreGremio.innerText = gremioCount;
+                    } else if (parentId === 'inter' && column.id === 'timeFinal') {
+                        interCount++;
+                        scoreInter.innerText = interCount;
+                    } else if (parentId === 'timeFinal' && column.id === 'gremio') {
+                        gremioCount--;
+                        scoreGremio.innerText = gremioCount;
+                        removeFromTimeFinal(playerName);
+                    } else if (parentId === 'timeFinal' && column.id === 'inter') {
+                        interCount--;
+                        scoreInter.innerText = interCount;
+                        removeFromTimeFinal(playerName);
+                    }
+                }
+            });
+        });
+        
+        function removeFromTimeFinal(playerName) {
+            const player = Array.from(timeFinal.children).find(child => child.innerText === playerName);
+            if (player) {
+                player.remove();
+            }
+        }
+    </script>
+</body>
+</html>
