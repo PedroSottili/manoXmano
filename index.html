@@ -92,105 +92,99 @@
         const timeFinal = document.getElementById('timeFinal');
         const scoreGremio = document.getElementById('scoreGremio');
         const scoreInter = document.getElementById('scoreInter');
-    
+
         let gremioCount = 0;
         let interCount = 0;
-    
+
         players.forEach(player => {
             player.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('text', player.innerText);
                 e.dataTransfer.setData('parentId', player.parentElement.id);
+                player.style.opacity = '0.5';  // Fade the player when it's being dragged
             });
-    
-            // Adicionando suporte para toques (touch events)
+
+            player.addEventListener('dragend', (e) => {
+                player.style.opacity = '1';  // Restore opacity after dragging
+            });
+
+            // For mobile, implement touch events to simulate drag-and-drop
             player.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                e.target.style.opacity = '0.5';  // Visual feedback
                 const touch = e.touches[0];
-                e.dataTransfer = { setData: () => {} };  // Preventing default dragstart behavior
-                e.dataTransfer.setData('text', player.innerText);
-                e.dataTransfer.setData('parentId', player.parentElement.id);
-                player.style.position = 'absolute';
-                document.body.appendChild(player);  // Move player to the body to follow touch
-    
-                function moveAt(pageX, pageY) {
-                    player.style.left = pageX - player.offsetWidth / 2 + 'px';
-                    player.style.top = pageY - player.offsetHeight / 2 + 'px';
-                }
-    
-                moveAt(touch.pageX, touch.pageY);
-    
-                const moveTouch = (moveEvent) => {
-                    const touchMove = moveEvent.touches[0];
-                    moveAt(touchMove.pageX, touchMove.pageY);
-                };
-    
-                const dropTouch = (dropEvent) => {
-                    document.removeEventListener('touchmove', moveTouch);
-                    document.removeEventListener('touchend', dropTouch);
-                    // Simulate drop action
-                    const playerName = player.innerText;
-                    const parentId = player.parentElement.id;
-                    
-                    const column = document.elementFromPoint(touch.pageX, touch.pageY).closest('.column');
-                    if (column && (column.id === 'timeFinal' || 
-                        (parentId === 'timeFinal' && ((column.id === 'gremio' && isGremio(playerName)) || (column.id === 'inter' && isInter(playerName)))))) {
-                        handleDrop(column, player, playerName, parentId);
-                    }
-                    player.style.position = '';
-                    document.body.removeChild(player);
-                };
-    
-                document.addEventListener('touchmove', moveTouch);
-                document.addEventListener('touchend', dropTouch);
+                const playerName = player.innerText;
+                const parentId = player.parentElement.id;
+
+                document.addEventListener('touchmove', (moveEvent) => {
+                    moveEvent.preventDefault();
+                    // Move the player element along with the touch
+                    player.style.position = 'absolute';
+                    player.style.left = `${moveEvent.touches[0].clientX - 50}px`;
+                    player.style.top = `${moveEvent.touches[0].clientY - 50}px`;
+                });
+
+                document.addEventListener('touchend', () => {
+                    player.style.opacity = '1';
+                    player.style.position = 'static';
+                    document.removeEventListener('touchmove', moveEvent);
+                    document.removeEventListener('touchend', touchendEvent);
+                });
             });
         });
-    
-        function handleDrop(column, player, playerName, parentId) {
-            if (column && !Array.from(column.children).find(child => child.innerText === playerName)) {
-                const newPlayer = document.createElement('div');
-                newPlayer.classList.add('player');
-                newPlayer.innerText = playerName;
-                newPlayer.setAttribute('draggable', 'true');
-    
-                newPlayer.addEventListener('dragstart', (e) => {
-                    e.dataTransfer.setData('text', newPlayer.innerText);
-                    e.dataTransfer.setData('parentId', newPlayer.parentElement.id);
-                });
-    
-                column.appendChild(newPlayer);
-    
-                if (parentId === 'gremio' && column.id === 'timeFinal') {
-                    gremioCount++;
-                    scoreGremio.innerText = gremioCount;
-                } else if (parentId === 'inter' && column.id === 'timeFinal') {
-                    interCount++;
-                    scoreInter.innerText = interCount;
-                } else if (parentId === 'timeFinal' && column.id === 'gremio') {
-                    gremioCount--;
-                    scoreGremio.innerText = gremioCount;
-                    removeFromTimeFinal(playerName);
-                } else if (parentId === 'timeFinal' && column.id === 'inter') {
-                    interCount--;
-                    scoreInter.innerText = interCount;
-                    removeFromTimeFinal(playerName);
+
+        document.querySelectorAll('.column').forEach(column => {
+            column.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+            
+            column.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const playerName = e.dataTransfer.getData('text');
+                const parentId = e.dataTransfer.getData('parentId');
+                
+                if (column.id === 'timeFinal' || 
+                    (parentId === 'timeFinal' && ((column.id === 'gremio' && isGremio(playerName)) || (column.id === 'inter' && isInter(playerName))))) {
+                    
+                    const existingPlayer = Array.from(column.children).find(child => child.innerText === playerName);
+                    if (!existingPlayer) {
+                        const newPlayer = document.createElement('div');
+                        newPlayer.classList.add('player');
+                        newPlayer.innerText = playerName;
+                        newPlayer.setAttribute('draggable', 'true');
+                        
+                        newPlayer.addEventListener('dragstart', (e) => {
+                            e.dataTransfer.setData('text', newPlayer.innerText);
+                            e.dataTransfer.setData('parentId', newPlayer.parentElement.id);
+                        });
+                        
+                        column.appendChild(newPlayer);
+                    }
+                    
+                    if (parentId === 'gremio' && column.id === 'timeFinal') {
+                        gremioCount++;
+                        scoreGremio.innerText = gremioCount;
+                    } else if (parentId === 'inter' && column.id === 'timeFinal') {
+                        interCount++;
+                        scoreInter.innerText = interCount;
+                    } else if (parentId === 'timeFinal' && column.id === 'gremio') {
+                        gremioCount--;
+                        scoreGremio.innerText = gremioCount;
+                        removeFromTimeFinal(playerName);
+                    } else if (parentId === 'timeFinal' && column.id === 'inter') {
+                        interCount--;
+                        scoreInter.innerText = interCount;
+                        removeFromTimeFinal(playerName);
+                    }
                 }
-            }
-        }
-    
+            });
+        });
+        
         function removeFromTimeFinal(playerName) {
             const player = Array.from(timeFinal.children).find(child => child.innerText === playerName);
             if (player) {
                 player.remove();
             }
         }
-    
-        function isGremio(playerName) {
-            return ['Volpi', 'João Pedro', 'G. Martins', 'W. Leonardo', 'L. Esteves', 'Villasanti', 'Camilo', 'C. Oliveira', 'Monsalve', 'Amuzu/Pavón', 'Braithwaite', 'TEC - G. Quinteros'].includes(playerName);
-        }
-    
-        function isInter(playerName) {
-            return ['Anthoni', 'Aguirre', 'Vitão', 'V. Gabriel', 'Bernabei', 'B. Henrique', 'Fernando', 'Vitinho', 'Alan Patrick', 'Carbonero', 'Valencia', 'TEC - Roger'].includes(playerName);
-        }
-</script>
-    
+    </script>
 </body>
 </html>
